@@ -176,7 +176,7 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
                         for (Camera.Size str : mSupportedPreviewSizes)
                             Log.e(TAG, "Size--" + str.width + "/" + str.height);
                         Camera.Parameters parameters = camera.getParameters();
-                        parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
+                        parameters.setPreviewSize(480, 640);
                         camera.setParameters(parameters);
                         camera.setDisplayOrientation(90);
                         camera.setPreviewDisplay(surfaceHolder);
@@ -186,10 +186,6 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
                     }
                 }
             }
-//            Camera.Parameters parameters = camera.getParameters();
-//            parameters.setPreviewSize(mPreviewSize.width,mPreviewSize.height);
-//            camera.setParameters(parameters);
-//            camera.setDisplayOrientation(90);
             camera.setPreviewDisplay(surfaceHolder);
             camera.startPreview();
         } catch (IOException e) {
@@ -242,6 +238,7 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
 
     @Override
     public void onPictureTaken(byte[] data, Camera camera) {
+        Log.e(TAG,"Saving Image....");
         saveImage(data);
         resetCamera();
     }
@@ -250,10 +247,10 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
         FileOutputStream outStream;
         try {
             String root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString();
-            File myDir = new File(root + "/PhotoBooth");
+            File myDir = new File(root + "/SlingShot");
             myDir.mkdirs();
             String fileName = "Image_" + System.currentTimeMillis() + ".PNG";
-            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "/PhotoBooth/" + fileName);
+            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "/SlingShot/" + fileName);
 
             outStream = new FileOutputStream(file);
             outStream.write(bytes);
@@ -263,10 +260,10 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
             Uri picUri = Uri.fromFile(f);
             galleryIntent.setData(picUri);
             this.sendBroadcast(galleryIntent);
-//            Intent intent = new Intent(getApplicationContext(), CaptureScreen.class);
-//            intent.putExtra("Image", fileName);
-//            startActivity(intent);
-//            finish();
+            Intent intent = new Intent(getApplicationContext(), capturedImage.class);
+            intent.putExtra("Image", fileName);
+            startActivity(intent);
+            finish();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
