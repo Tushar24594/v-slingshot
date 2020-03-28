@@ -78,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
                         else{
                                 csv.saveDatatoCSV(name.getText().toString().trim(),phone.getText().toString().trim());
                                 Intent camera = new Intent(getApplicationContext(),camera.class);
+                                camera.putExtra("name",name.getText().toString().trim());
+                                camera.putExtra("mobile",phone.getText().toString().trim());
                                 startActivity(camera);
                                 finish();
                         }

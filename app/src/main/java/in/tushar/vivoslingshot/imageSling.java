@@ -29,9 +29,16 @@ import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -43,27 +50,28 @@ public class imageSling extends AppCompatActivity {
     boolean doubleBackToExitPressedOnce = false;
     public static final String TAG = "----CameraScreen----";
     ImageView imageView;
-    String image,img;
+    String image, img,uName,uMobile;
     Bitmap myBitmap, bMapRotate;
     SensorManager sensorManager = null;
     float[] values;
     List list;
     private Socket socketClient;
     String url = "192.168.0.42";
-    Boolean isSended=false;
+    Boolean isSended = false;
     private RequestQueue queue;
     File imgFile;
+
     {
         try {
             socketClient = IO.socket("http://192.168.0.42:27015/androidSocket");
             socketClient.connect();
             Log.d(TAG, "http://" + url + ":27015/androidClient");
-            socketClient.emit("Connect","");
+            socketClient.emit("Connect", "");
             socketClient.on("connected", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
 //                    JSONObject obj = (JSONObject)args[0];
-                    Log.e(TAG,"Received Message : "+args);
+                    Log.e(TAG, "Received Message : " + args);
                 }
             });
         } catch (
@@ -73,6 +81,7 @@ public class imageSling extends AppCompatActivity {
         }
 
     }
+
     private Emitter.Listener onNewMessage = new Emitter.Listener() {
 
         @Override
@@ -87,55 +96,61 @@ public class imageSling extends AppCompatActivity {
             }
         }
     };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_sling);
         image = getIntent().getStringExtra("Image");
+        uName = getIntent().getStringExtra("name");
+        uMobile = getIntent().getStringExtra("mobile");
         imageView = findViewById(R.id.image);
-        Log.w(TAG," Image Source : "+image);
+        Log.w(TAG, " Image Source : " + image);
 //        socketClient.connect();
         queue = Volley.newRequestQueue(this);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        list=sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
+        list = sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
         Log.e("-----", String.valueOf(sensorManager.getDefaultSensor(1)));
         Log.e("--list--", String.valueOf(list));
-        if(list.size()>0){
-            sensorManager.registerListener(sel,(Sensor)list.get(0),SensorManager.SENSOR_DELAY_NORMAL);
-        }else {
+        if (list.size() > 0) {
+            sensorManager.registerListener(sel, (Sensor) list.get(0), SensorManager.SENSOR_DELAY_NORMAL);
+        } else {
             Toast.makeText(getBaseContext(), "Error: No Accelerometer.", Toast.LENGTH_LONG).show();
         }
-        imgFile = new File(Environment.getExternalStorageDirectory(), "/SlingShot/"+image);
+        imgFile = new File(Environment.getExternalStorageDirectory(), "/SlingShot/" + image);
         if (imgFile.exists()) {
-            Log.e(TAG ,"Image is exist : "+imgFile);
+            Log.e(TAG, "Image is exist : " + imgFile);
             myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
             imageView.setImageBitmap(myBitmap);
             img = convert(myBitmap);
-            Log.e(TAG ,">>Base 64"+img);
-            sendImageToServer(imgFile);
-//            socketClient.emit("image",img);
-        }else {
-            Log.e(TAG ,"Image is not exist");
+//            encodingString.append()
+            Log.e(TAG, ">>Base 64" + img);
+            sendImageToServer(img);
+//            socketClient.emit("image", img);
+//            sendDataToSocket();
+        } else {
+            Log.e(TAG, "Image is not exist");
         }
     }
-    public static String convert(Bitmap bitmap)
-    {
+
+    public static String convert(Bitmap bitmap) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 50, outputStream);
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
         return Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
     }
+
     SensorEventListener sel = new SensorEventListener() {
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
 
         public void onSensorChanged(SensorEvent event) {
             values = event.values;
-            if(values[2]>8){
-                if(isSended){
+            if (values[2] > 8) {
+                if (isSended) {
 //                    sendImageToServer();
-                    Log.e(TAG,"Image Sended");
-                }else {
-                    Log.e(TAG,"Already Sended");
+//                    Log.e(TAG, "Image Sended");
+                } else {
+//                    Log.e(TAG, "Already Sended");
                 }
 //                if(isConnected){
 //                Log.e(TAG," Z :"+values[2]);
@@ -143,24 +158,24 @@ public class imageSling extends AppCompatActivity {
 //                Log.e(TAG,"Sending Image......");
 //                /sdcard/SlingShot/SlingShot_20200313_114430.jpg
 //                }
-            }else{
-                Log.e(TAG,"Try to Sending......");
+            } else {
+                Log.e(TAG, "Try to Sending......");
             }
         }
     };
 
-    public void socketConnected(){
-        Log.e(TAG,"Connecting........");
+    public void socketConnected() {
+        Log.e(TAG, "Connecting........");
         try {
-            socketClient = IO.socket("http://"+ url+":27015/androidClient");
+            socketClient = IO.socket("http://" + url + ":27015/androidClient");
             socketClient.connect();
-            Log.d(TAG,"http://"+ url+":27015/androidClient");
+            Log.d(TAG, "http://" + url + ":27015/androidClient");
         } catch (URISyntaxException e) {
             e.printStackTrace();
             Toast.makeText(getApplicationContext(), "Not connect", Toast.LENGTH_SHORT).show();
         }
-        if(!socketClient.connected()){
-            try{
+        if (!socketClient.connected()) {
+            try {
                 Emitter.Listener onConnect = new Emitter.Listener() {
                     @Override
                     public void call(Object... args) {
@@ -175,66 +190,111 @@ public class imageSling extends AppCompatActivity {
                 };
                 socketClient.disconnect();
                 socketClient.connect();
-                socketClient.on(Socket.EVENT_CONNECT_ERROR,onConnectError);
+                socketClient.on(Socket.EVENT_CONNECT_ERROR, onConnectError);
                 socketClient.on(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
                 socketClient.on(Socket.EVENT_CONNECT, onConnect);
                 socketClient.on(Socket.EVENT_RECONNECT, onConnect);
                 socketClient.on(Socket.EVENT_DISCONNECT, onConnectError);
-                Log.d(TAG,"Socket Connected"+socketClient);
-                socketClient.emit("connect","Ready");
+                Log.d(TAG, "Socket Connected" + socketClient);
+                socketClient.emit("connect", "Ready");
 //                isConnected=true;
 
-            }catch (Exception e){
-                Log.d(TAG,"Exception :",e);
+            } catch (Exception e) {
+                Log.d(TAG, "Exception :", e);
             }
-        }else if(socketClient.connected()) {
-            Log.e("--Socket--","is connected");
+        } else if (socketClient.connected()) {
+            Log.e("--Socket--", "is connected");
         }
 
     }
-    public void sendImageToServer(final File image){
-        Log.e(TAG,"Sending Image...");
-        String url="http://192.168.0.70:8125/api/img";
+
+    void sendDataToSocket() {
+        InputStream inputStream = null;
+        try {
+            inputStream = new FileInputStream(imgFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        byte[] bytes;
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        bytes = outputStream.toByteArray();
+        StringBuffer encodingString = new StringBuffer("data:image/jpeg;base64,");
+        encodingString.append(Base64.encodeToString(bytes, Base64.DEFAULT));
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("name", uName);
+            jsonObject.put("mobile", uMobile);
+            jsonObject.put("img", img);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        Log.e(TAG, "JSON :- " + JSONObject.quote(jsonObject.toString()));
+        Log.e(TAG, "Socket connected :" + socketClient.connected());
+        if (!socketClient.connected()) {
+            try {
+                socketClient.connect();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        socketClient.emit("register", jsonObject);
+//        sendImageToServer(jsonObject);
+    }
+
+    public void sendImageToServer(final String img) {
+        Log.e(TAG, "Sending Image...");
+        String url = "http://192.168.0.70:8125/api/img";
         //converting image to base64 string
 
-        try{
+        try {
             StringRequest stringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
                 @Override
                 public void onResponse(String s) {
-                    Log.e(TAG,"Response : " +s);
-                    Toast.makeText(imageSling.this, "Uploaded : " +s, Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(getApplicationContext(),MainActivity.class);
+                    Log.e(TAG, "Response : " + s);
+                    Toast.makeText(imageSling.this, "Uploaded : " + s, Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                     startActivity(intent);
                     finish();
                     isSended = true;
-                    if(s.equals("true")){
+                    if (s.equals("true")) {
                         Toast.makeText(imageSling.this, "Uploaded Successful", Toast.LENGTH_LONG).show();
-                    }
-                    else{
+                    } else {
                         Toast.makeText(imageSling.this, "Some error occurred!", Toast.LENGTH_LONG).show();
                     }
                 }
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-                    Toast.makeText(imageSling.this, "Some error occurred -> "+error, Toast.LENGTH_LONG).show();
+                    Toast.makeText(imageSling.this, "Some error occurred -> " + error, Toast.LENGTH_LONG).show();
                     isSended = true;
                 }
-            }){
+            }) {
                 //adding parameters to send
                 @Override
                 protected Map<String, String> getParams() throws AuthFailureError {
                     Map<String, String> parameters = new HashMap<String, String>();
+                    parameters.put("name", uName);
+                    parameters.put("mobile", uMobile);
                     parameters.put("image", img);
                     return parameters;
                 }
             };
             queue.add(stringRequest);
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
     @Override
     public void onBackPressed() {
         if (doubleBackToExitPressedOnce) {

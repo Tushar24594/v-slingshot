@@ -51,12 +51,16 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
     TextView timer;
     private Camera.Size mPreviewSize;
     private List<Camera.Size> mSupportedPreviewSizes;
+    String uName, uMobile;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        regular = Typeface.createFromAsset(getAssets(),"fonts/AvenirNextLTPro-Regular.otf");
+        regular = Typeface.createFromAsset(getAssets(), "fonts/AvenirNextLTPro-Regular.otf");
         surfaceView = findViewById(R.id.surfaceView);
+        uName = getIntent().getStringExtra("name");
+        uMobile = getIntent().getStringExtra("mobile");
         mediaPlayer = MediaPlayer.create(getApplicationContext(), R.raw.beep);
         if (surfaceView != null) {
             result = checkPermission();
@@ -67,6 +71,7 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
             if (result) setupSurfaceHolder();
         }
     }
+
     private boolean checkPermission() {
         int currentAPIVersion = Build.VERSION.SDK_INT;
         if (currentAPIVersion >= android.os.Build.VERSION_CODES.M) {
@@ -91,6 +96,7 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
         }
         return true;
     }
+
     private void showPermissionAlert(final String[] permissions) {
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
         alertBuilder.setCancelable(true);
@@ -104,6 +110,7 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
         AlertDialog alert = alertBuilder.create();
         alert.show();
     }
+
     private void requestPermissions(String[] permissions) {
         ActivityCompat.requestPermissions(camera.this, permissions, REQUEST_CODE);
     }
@@ -123,6 +130,7 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
         surfaceHolder.addCallback(this);
         setBtnClick();
     }
+
     private void setBtnClick() {
         final ImageButton startBtn = findViewById(R.id.startBtn);
         if (startBtn != null) {
@@ -146,6 +154,7 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
             });
         }
     }
+
     public void captureImage() {
         if (camera != null) {
             Log.e(TAG, "Camera taking picture.....");
@@ -155,10 +164,12 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
             Log.e(TAG, "Camera Cannot taking picture.....");
         }
     }
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         startCamera();
     }
+
     private void startCamera() {
 
         try {
@@ -171,12 +182,12 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
                     try {
                         camera = Camera.open(camIdx);
                         camera.setAutoFocusMoveCallback(null);
-                        camera.setDisplayOrientation(90);
+//                        camera.setDisplayOrientation(90);
                         mSupportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
                         for (Camera.Size str : mSupportedPreviewSizes)
                             Log.e(TAG, "Size--" + str.width + "/" + str.height);
                         Camera.Parameters parameters = camera.getParameters();
-                        parameters.setPreviewSize(480, 640);
+                        parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
                         camera.setParameters(parameters);
                         camera.setDisplayOrientation(90);
                         camera.setPreviewDisplay(surfaceHolder);
@@ -238,7 +249,7 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
 
     @Override
     public void onPictureTaken(byte[] data, Camera camera) {
-        Log.e(TAG,"Saving Image....");
+        Log.e(TAG, "Saving Image....");
         saveImage(data);
         resetCamera();
     }
@@ -261,6 +272,8 @@ public class camera extends AppCompatActivity implements SurfaceHolder.Callback,
             galleryIntent.setData(picUri);
             this.sendBroadcast(galleryIntent);
             Intent intent = new Intent(getApplicationContext(), capturedImage.class);
+            intent.putExtra("name",uName);
+            intent.putExtra("mobile",uMobile);
             intent.putExtra("Image", fileName);
             startActivity(intent);
             finish();
